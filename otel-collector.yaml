@@ -1,0 +1,62 @@
+# OpenTelemetry Collector (distribution contrib) en DaemonSet.
+# Chart : open-telemetry/opentelemetry-collector
+# Un seul composant pour les 3 signaux :
+#   - traces   : OTLP -> Tempo
+#   - logs     : OTLP + fichiers des pods (filelog) -> Loki (OTLP natif)
+#   - métriques: OTLP + kubelet -> Mimir (OTLP natif)
+mode: daemonset
+fullnameOverride: otel-collector
+
+image:
+  repository: otel/opentelemetry-collector-contrib
+
+presets:
+  logsCollection:            # receiver filelog sur /var/log/pods (remplace Promtail)
+    enabled: true
+    includeCollectorLogs: false
+  kubeletMetrics:            # receiver kubeletstats
+    enabled: true
+  kubernetesAttributes:      # enrichit avec k8s.namespace.name, k8s.pod.name, ...
+    enabled: true
+
+resources:
+  requests: { cpu: 100m, memory: 200Mi }
+  limits: { memory: 512Mi }
+
+config:
+  receivers:
+    jaeger: null
+    zipkin: null
+    prometheus: null
+  processors:
+    memory_limiter:
+      check_interval: 5s
+      limit_percentage: 80
+      spike_limit_percentage: 25
+    batch: {}
+  exporters:
+    debug: null
+    otlp_grpc/tempo:
+      endpoint: tempo.observability.svc.cluster.local:4317
+      tls:
+        insecure: true
+    otlphttp/loki:
+      endpoint: http://loki.observability.svc.cluster.local:3100/otlp
+    otlphttp/mimir:
+      endpoint: http://mimir-distributor.observability.svc.cluster.local:8080/otlp
+  service:
+    pipelines:
+      # Les presets ajoutent automatiquement filelog (logs), kubeletstats (metrics)
+      # et le processor k8sattributes à ces pipelines.
+      traces:
+        receivers: [otlp]
+        processors: [memory_limiter, batch]
+        exporters: [otlp_grpc/tempo]
+      logs:
+        receivers: [otlp]
+        processors: [memory_limiter, batch]
+        exporters: [otlphttp/loki]
+      metrics:
+        receivers: [otlp]
+        processors: [memory_limiter, batch]
+        exporters: [otlphttp/mimir]

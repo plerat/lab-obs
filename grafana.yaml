@@ -1,0 +1,72 @@
+# Grafana avec datasources Mimir / Loki / Tempo / Alertmanager provisionnées
+# et corrélation métriques <-> logs <-> traces.
+# Chart : grafana-community/grafana
+adminUser: admin
+adminPassword: admin          # lab local uniquement
+
+service:
+  type: NodePort
+  nodePort: 30030
+
+persistence:
+  enabled: false
+
+resources:
+  requests: { cpu: 100m, memory: 256Mi }
+  limits: { memory: 512Mi }
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Mimir
+        uid: mimir
+        type: prometheus
+        access: proxy
+        url: http://mimir-query-frontend.observability.svc.cluster.local:8080/prometheus
+        isDefault: true
+        jsonData:
+          httpMethod: POST
+          prometheusType: Mimir
+          exemplarTraceIdDestinations:
+            - name: trace_id
+              datasourceUid: tempo
+
+      - name: Loki
+        uid: loki
+        type: loki
+        access: proxy
+        url: http://loki.observability.svc.cluster.local:3100
+        jsonData:
+          derivedFields:
+            # trace_id arrive en structured metadata via OTLP
+            - name: TraceID
+              matcherType: label
+              matcherRegex: trace_id
+              url: '$${__value.raw}'
+              datasourceUid: tempo
+
+      - name: Tempo
+        uid: tempo
+        type: tempo
+        access: proxy
+        url: http://tempo.observability.svc.cluster.local:3200
+        jsonData:
+          nodeGraph:
+            enabled: true
+          serviceMap:
+            datasourceUid: mimir
+          tracesToLogsV2:
+            datasourceUid: loki
+            filterByTraceID: true
+            filterBySpanID: false
+          tracesToMetrics:
+            datasourceUid: mimir
+
+      - name: Alertmanager (Mimir)
+        uid: alertmanager
+        type: alertmanager
+        access: proxy
+        url: http://mimir-alertmanager.observability.svc.cluster.local:8080
+        jsonData:
+          implementation: mimir

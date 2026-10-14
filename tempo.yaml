@@ -1,0 +1,28 @@
+# Tempo monolithique, stockage local.
+# Chart : grafana-community/tempo (ex grafana/tempo, déprécié).
+tempo:
+  retention: 24h
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
+  # Génère span-metrics + service-graphs et les pousse dans Mimir
+  # (remplace le connecteur spanmetrics du collector de la démo).
+  metricsGenerator:
+    enabled: true
+    remoteWriteUrl: "http://mimir-distributor.observability.svc.cluster.local:8080/api/v1/push"
+  overrides:
+    defaults:
+      metrics_generator:
+        processors: [service-graphs, span-metrics]
+
+persistence:
+  enabled: true
+  size: 5Gi
+
+resources:
+  requests: { cpu: 100m, memory: 256Mi }
+  limits: { memory: 1Gi }

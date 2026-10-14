@@ -1,0 +1,24 @@
+# OpenTelemetry Demo : on désactive TOUT le outillage embarqué (collector, Prometheus,
+# Grafana, Jaeger, OpenSearch) et on pointe vers notre Collector.
+# Chart : open-telemetry/opentelemetry-demo
+opentelemetry-collector:
+  enabled: false
+jaeger:
+  enabled: false
+prometheus:
+  enabled: false
+grafana:
+  enabled: false
+opensearch:
+  enabled: false
+
+default:
+  envOverrides:
+    - name: OTEL_COLLECTOR_NAME
+      value: otel-collector.observability.svc.cluster.local
+
+components:
+  frontend-proxy:
+    service:
+      type: NodePort
+      nodePort: 30080

@@ -1,0 +1,120 @@
+# Mimir en mode "classique" (sans ingest storage / Kafka), 1 replica par composant.
+# Chart : grafana/mimir-distributed (>= 6.0 : ingest storage + Kafka activés par défaut,
+# on les désactive explicitement pour tenir sur Minikube).
+kafka:
+  enabled: false
+
+# Webhooks du rollout-operator = CRDs à installer avant. Inutile sans zone-awareness.
+rollout_operator:
+  enabled: false
+
+# MinIO embarqué (stockage objet pour blocks, ruler, alertmanager) : OK pour un lab.
+minio:
+  enabled: true
+  persistence:
+    size: 5Gi
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+
+mimir:
+  structuredConfig:
+    multitenancy_enabled: false          # tenant unique "anonymous" -> pas d'en-tête X-Scope-OrgID
+    ingest_storage:
+      enabled: false
+    ingester:
+      ring:
+        replication_factor: 1
+    store_gateway:
+      sharding_ring:
+        replication_factor: 1
+    alertmanager:
+      sharding_ring:
+        replication_factor: 1
+    limits:
+      ingestion_rate: 50000
+      ingestion_burst_size: 500000
+      compactor_blocks_retention_period: 3d
+
+distributor:
+  replicas: 1
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 512Mi }
+
+ingester:
+  replicas: 1
+  zoneAwareReplication:
+    enabled: false
+  persistentVolume:
+    size: 5Gi
+  resources:
+    requests: { cpu: 200m, memory: 512Mi }
+    limits: { memory: 1Gi }
+
+store_gateway:
+  replicas: 1
+  zoneAwareReplication:
+    enabled: false
+  persistentVolume:
+    size: 2Gi
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 512Mi }
+
+compactor:
+  replicas: 1
+  persistentVolume:
+    size: 2Gi
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 512Mi }
+
+querier:
+  replicas: 1
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 768Mi }
+
+query_frontend:
+  replicas: 1
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+
+query_scheduler:
+  replicas: 1
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+
+ruler:
+  replicas: 1
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+
+# Alertmanager intégré à Mimir : reçoit les alertes du ruler.
+alertmanager:
+  enabled: true
+  replicas: 1
+  zoneAwareReplication:
+    enabled: false
+  persistentVolume:
+    size: 1Gi
+  resources:
+    requests: { cpu: 25m, memory: 64Mi }
+  # Config utilisée tant qu'aucune config n'a été chargée via l'API (mimirtool alertmanager load)
+  fallbackConfig: |
+    route:
+      receiver: default
+      group_by: [alertname, namespace]
+      group_wait: 10s
+      group_interval: 1m
+      repeat_interval: 4h
+    receivers:
+      - name: default
+        # Exemple Slack/webhook :
+        # webhook_configs:
+        #   - url: http://webhook.example/alerts
+
+overrides_exporter:
+  replicas: 1
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
