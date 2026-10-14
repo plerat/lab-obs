@@ -8,7 +8,7 @@ cd "$(dirname "$0")"
 # 1. Dépôts Helm
 helm repo add grafana              https://grafana.github.io/helm-charts            # Mimir
 helm repo add grafana-community    https://grafana-community.github.io/helm-charts  # Loki, Tempo, Grafana
-helm repo add open-telemetry       https://open-telemetry.github.io/helm-charts     # Collector, démo
+helm repo add open-telemetry       https://open-telemetry.github.io/opentelemetry-helm-charts     # Collector, démo
 helm repo update
 
 kubectl create namespace observability --dry-run=client -o yaml | kubectl apply -f -
