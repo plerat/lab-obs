@@ -1,0 +1,21 @@
+# Service devant le DaemonSet du Collector (OTLP gRPC 4317 + HTTP 4318).
+# Nom attendu par otel-demo.yaml : otel-collector-agent
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector-agent
+  namespace: observability
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: opentelemetry-collector
+    app.kubernetes.io/instance: otel-collector
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+      protocol: TCP
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318
+      protocol: TCP

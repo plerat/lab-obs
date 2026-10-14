@@ -20,6 +20,7 @@ helm upgrade --install tempo      grafana-community/tempo         -n observabili
 
 # 3. Collecte
 helm upgrade --install otel-collector open-telemetry/opentelemetry-collector -n observability -f otel-collector.yaml
+kubectl apply -f otel-collector-service.yaml
 
 # 4. Visualisation
 helm upgrade --install grafana grafana-community/grafana -n observability -f grafana.yaml

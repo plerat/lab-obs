@@ -10,6 +10,9 @@ fullnameOverride: otel-collector
 image:
   repository: otel/opentelemetry-collector-contrib
 
+# Le Service du Collector est créé à part (otel-collector-service.yaml) :
+# ce chart ne le crée pas en mode DaemonSet.
+
 presets:
   logsCollection:            # receiver filelog sur /var/log/pods (remplace Promtail)
     enabled: true
@@ -40,9 +43,9 @@ config:
       endpoint: tempo.observability.svc.cluster.local:4317
       tls:
         insecure: true
-    otlphttp/loki:
+    otlp_http/loki:
       endpoint: http://loki.observability.svc.cluster.local:3100/otlp
-    otlphttp/prometheus:
+    otlp_http/prometheus:
       # l'exporter ajoute /v1/metrics -> /api/v1/otlp/v1/metrics
       endpoint: http://prometheus-server.observability.svc.cluster.local:80/api/v1/otlp
   service:
@@ -56,8 +59,8 @@ config:
       logs:
         receivers: [otlp]
         processors: [memory_limiter, batch]
-        exporters: [otlphttp/loki]
+        exporters: [otlp_http/loki]
       metrics:
         receivers: [otlp]
         processors: [memory_limiter, batch]
-        exporters: [otlphttp/prometheus]
+        exporters: [otlp_http/prometheus]
