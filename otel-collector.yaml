@@ -28,6 +28,9 @@ resources:
 
 config:
   receivers:
+    kubeletstats:
+      # Minikube : le certificat du kubelet n'a pas d'IP SAN -> on saute la vérification (lab uniquement)
+      insecure_skip_verify: true
     jaeger: null
     zipkin: null
     prometheus: null
