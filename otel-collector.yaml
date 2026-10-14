@@ -3,7 +3,7 @@
 # Un seul composant pour les 3 signaux :
 #   - traces   : OTLP -> Tempo
 #   - logs     : OTLP + fichiers des pods (filelog) -> Loki (OTLP natif)
-#   - métriques: OTLP + kubelet -> Mimir (OTLP natif)
+#   - métriques: OTLP + kubelet -> Prometheus (OTLP natif)
 mode: daemonset
 fullnameOverride: otel-collector
 
@@ -42,8 +42,9 @@ config:
         insecure: true
     otlphttp/loki:
       endpoint: http://loki.observability.svc.cluster.local:3100/otlp
-    otlphttp/mimir:
-      endpoint: http://mimir-distributor.observability.svc.cluster.local:8080/otlp
+    otlphttp/prometheus:
+      # l'exporter ajoute /v1/metrics -> /api/v1/otlp/v1/metrics
+      endpoint: http://prometheus-server.observability.svc.cluster.local:80/api/v1/otlp
   service:
     pipelines:
       # Les presets ajoutent automatiquement filelog (logs), kubeletstats (metrics)
@@ -59,4 +60,4 @@ config:
       metrics:
         receivers: [otlp]
         processors: [memory_limiter, batch]
-        exporters: [otlphttp/mimir]
+        exporters: [otlphttp/prometheus]

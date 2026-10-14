@@ -1,4 +1,4 @@
-# Grafana avec datasources Mimir / Loki / Tempo / Alertmanager provisionnées
+# Grafana avec datasources Prometheus / Loki / Tempo / Alertmanager provisionnées
 # et corrélation métriques <-> logs <-> traces.
 # Chart : grafana-community/grafana
 adminUser: admin
@@ -19,18 +19,15 @@ datasources:
   datasources.yaml:
     apiVersion: 1
     datasources:
-      - name: Mimir
-        uid: mimir
+      - name: Prometheus
+        uid: prometheus
         type: prometheus
         access: proxy
-        url: http://mimir-query-frontend.observability.svc.cluster.local:8080/prometheus
+        url: http://prometheus-server.observability.svc.cluster.local:80
         isDefault: true
         jsonData:
           httpMethod: POST
-          prometheusType: Mimir
-          exemplarTraceIdDestinations:
-            - name: trace_id
-              datasourceUid: tempo
+          prometheusType: Prometheus
 
       - name: Loki
         uid: loki
@@ -55,18 +52,18 @@ datasources:
           nodeGraph:
             enabled: true
           serviceMap:
-            datasourceUid: mimir
+            datasourceUid: prometheus
           tracesToLogsV2:
             datasourceUid: loki
             filterByTraceID: true
             filterBySpanID: false
           tracesToMetrics:
-            datasourceUid: mimir
+            datasourceUid: prometheus
 
-      - name: Alertmanager (Mimir)
+      - name: Alertmanager
         uid: alertmanager
         type: alertmanager
         access: proxy
-        url: http://mimir-alertmanager.observability.svc.cluster.local:8080
+        url: http://prometheus-alertmanager.observability.svc.cluster.local:9093
         jsonData:
-          implementation: mimir
+          implementation: prometheus

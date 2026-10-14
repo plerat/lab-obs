@@ -1,0 +1,51 @@
+# Prometheus (1 pod) alimenté en OTLP par le Collector, pas de scraping sauf lui-même.
+# Chart : prometheus-community/prometheus (inclut Alertmanager en sous-chart)
+server:
+  extraFlags:
+    - web.enable-lifecycle
+    - web.enable-otlp-receiver              # /api/v1/otlp/v1/metrics (OTLP HTTP uniquement)
+    - web.enable-remote-write-receiver      # pour le metrics-generator de Tempo
+  retention: 3d
+  persistentVolume:
+    size: 5Gi
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 1Gi }
+
+# Config Prometheus : on remplace la liste de scrape par défaut (cibles k8s)
+# car toutes les métriques arrivent via le Collector.
+serverFiles:
+  prometheus.yml:
+    scrape_configs:
+      - job_name: prometheus
+        static_configs:
+          - targets: ["localhost:9090"]
+    otlp:
+      # Attributs de ressource OTLP promus en labels (sinon ils restent dans target_info)
+      promote_resource_attributes:
+        - service.instance.id
+        - service.name
+        - service.namespace
+        - k8s.namespace.name
+        - k8s.pod.name
+        - k8s.container.name
+        - k8s.node.name
+        - k8s.deployment.name
+    storage:
+      tsdb:
+        out_of_order_time_window: 30m       # tolère les petits décalages de timestamps OTLP
+
+alertmanager:
+  enabled: true
+  persistence:
+    size: 1Gi
+  resources:
+    requests: { cpu: 25m, memory: 64Mi }
+
+# Pas besoin de ces exporters : le Collector (kubeletstats) couvre nœuds et pods
+kube-state-metrics:
+  enabled: false
+prometheus-node-exporter:
+  enabled: false
+prometheus-pushgateway:
+  enabled: false

@@ -9,11 +9,11 @@ tempo:
           endpoint: "0.0.0.0:4317"
         http:
           endpoint: "0.0.0.0:4318"
-  # Génère span-metrics + service-graphs et les pousse dans Mimir
+  # Génère span-metrics + service-graphs et les pousse dans Prometheus
   # (remplace le connecteur spanmetrics du collector de la démo).
   metricsGenerator:
     enabled: true
-    remoteWriteUrl: "http://mimir-distributor.observability.svc.cluster.local:8080/api/v1/push"
+    remoteWriteUrl: "http://prometheus-server.observability.svc.cluster.local:80/api/v1/write"
   overrides:
     defaults:
       metrics_generator:
