@@ -15,7 +15,7 @@ opensearch:
 default:
   envOverrides:
     - name: OTEL_COLLECTOR_NAME
-      value: otel-collector.observability.svc.cluster.local
+      value: otel-collector-agent.observability.svc.cluster.local
 
 components:
   frontend-proxy:
